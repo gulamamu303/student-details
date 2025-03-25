@@ -1,28 +1,31 @@
 steps:
-  # 1. Build & Test Spring Boot App
+  # 1. Build & Test the Spring Boot Application
   - name: 'gradle:7.3.3-jdk17'
     entrypoint: 'gradle'
     args: ['clean', 'build', '--no-daemon']
 
   # 2. Build Docker Image
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/student-repo/student-details:$SHORT_SHA', '.']
+    args: ['build', '-t', 'asia-south1-docker.pkg.dev/$PROJECT_ID/student-repo/student-details:$SHORT_SHA', '.']
 
   # 3. Push Docker Image to Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/student-repo/student-details:$SHORT_SHA']
+    args: ['push', 'asia-south1-docker.pkg.dev/$PROJECT_ID/student-repo/student-details:$SHORT_SHA']
 
-  # 4. Deploy to Cloud Run
+  # 4. Deploy to Cloud Run in Mumbai (asia-south1)
   - name: 'gcr.io/cloud-builders/gcloud'
     args:
       - 'run'
       - 'deploy'
       - 'student-details'
-      - '--image=us-central1-docker.pkg.dev/$PROJECT_ID/student-repo/student-details:$SHORT_SHA'
-      - '--region=us-central1'
+      - '--image=asia-south1-docker.pkg.dev/$PROJECT_ID/student-repo/student-details:$SHORT_SHA'
+      - '--region=asia-south1'
       - '--platform=managed'
       - '--allow-unauthenticated'
       - '--port=8080'
 
+options:
+  defaultLogsBucketBehavior: REGIONAL_USER_OWNED_BUCKET  # ✅ Use region-based log bucket
+
 images:
-  - 'us-central1-docker.pkg.dev/$PROJECT_ID/student-repo/student-details:$SHORT_SHA'
+  - 'asia-south1-docker.pkg.dev/$PROJECT_ID/student-repo/student-details:$SHORT_SHA'
