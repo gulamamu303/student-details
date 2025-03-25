@@ -1,5 +1,5 @@
 steps:
-  # 1. Clear & Reset Gradle Cache (Fix Possible Corruption)
+  # 1. Clear Gradle Cache (Fix Corruption)
   - name: 'gcr.io/cloud-builders/gcloud'
     entrypoint: 'bash'
     args:
@@ -9,30 +9,40 @@ steps:
         rm -rf /workspace/.gradle
         mkdir -p /workspace/.gradle
 
-  # 2. Build the Spring Boot Application with Fresh Cache
-  - name: 'gradle:7.3.3-jdk17'
+  # 2. Fix File Permissions
+  - name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "Fixing permissions..."
+        chmod -R 777 /workspace/.gradle
+        ls -ld /workspace/.gradle
+
+  # 3. Build the Spring Boot Application with Gradle
+  - name: 'gradle:8.5-jdk17'
     entrypoint: 'gradle'
     args: ['clean', 'build', '--no-daemon', '--refresh-dependencies']
     env:
-      - 'GRADLE_USER_HOME=/workspace/.gradle'  # ✅ Forces fresh dependencies
-      - 'GRADLE_OPTS=-Dorg.gradle.daemon=false -Dorg.gradle.parallel=false'  # ✅ Disables daemon & parallel execution
+      - 'GRADLE_USER_HOME=/workspace/.gradle'  # Ensure fresh dependencies
+      - 'GRADLE_OPTS=-Dorg.gradle.daemon=false -Dorg.gradle.parallel=false'
 
-  # 3. Verify JAR File Exists Before Docker Build
+  # 4. Verify JAR File Exists Before Docker Build
   - name: 'gcr.io/cloud-builders/gcloud'
     entrypoint: 'bash'
     args:
       - '-c'
       - 'ls -lh build/libs && if [ ! -f build/libs/studentsDetails-0.0.1-SNAPSHOT.jar ]; then echo "JAR file not found!" && exit 1; fi'
 
-  # 4. Build Docker Image
+  # 5. Build Docker Image
   - name: 'gcr.io/cloud-builders/docker'
     args: ['build', '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/student-repo/student-details:$SHORT_SHA', '.']
 
-  # 5. Push Docker Image to Artifact Registry
+  # 6. Push Docker Image to Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/student-repo/student-details:$SHORT_SHA']
 
-  # 6. Deploy to Cloud Run (use global to avoid regional restrictions)
+  # 7. Deploy to Cloud Run
   - name: 'gcr.io/cloud-builders/gcloud'
     args:
       - 'run'
@@ -45,9 +55,5 @@ steps:
       - '--port=8080'
 
 options:
-  defaultLogsBucketBehavior: REGIONAL_USER_OWNED_BUCKET
-  machineType: 'E2_HIGHCPU_8'  # ✅ More CPU for faster builds
-  logging: CLOUD_LOGGING_ONLY  # ✅ Ensures logs are captured properly
-
-images:
-  - 'us-central1-docker.pkg.dev/$PROJECT_ID/student-repo/student-details:$SHORT_SHA'
+  machineType: 'E2_HIGHCPU_8'  # Increase build machine power
+  logging: CLOUD_LOGGING_ONLY
