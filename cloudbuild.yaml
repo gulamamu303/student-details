@@ -1,18 +1,25 @@
 steps:
-  # 1. Build & Test the Spring Boot Application using Gradle
+  # 1. Clear Gradle Cache Before Build
+  - name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - 'rm -rf /home/gradle/.gradle/caches && echo "Gradle cache cleared"'
+
+  # 2. Build & Test the Spring Boot Application
   - name: 'gradle:7.3.3-jdk17'
     entrypoint: 'gradle'
     args: ['clean', 'build', '--no-daemon']
 
-  # 2. Build Docker Image
+  # 3. Build Docker Image
   - name: 'gcr.io/cloud-builders/docker'
     args: ['build', '-t', 'asia-south1-docker.pkg.dev/$PROJECT_ID/student-repo/student-details:$SHORT_SHA', '.']
 
-  # 3. Push Docker Image to Artifact Registry
+  # 4. Push Docker Image to Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'asia-south1-docker.pkg.dev/$PROJECT_ID/student-repo/student-details:$SHORT_SHA']
 
-  # 4. Deploy to Cloud Run in Mumbai (asia-south1)
+  # 5. Deploy to Cloud Run in Mumbai (asia-south1)
   - name: 'gcr.io/cloud-builders/gcloud'
     args:
       - 'run'
@@ -25,7 +32,7 @@ steps:
       - '--port=8080'
 
 options:
-  defaultLogsBucketBehavior: REGIONAL_USER_OWNED_BUCKET  # ✅ Use region-based log bucket
+  defaultLogsBucketBehavior: REGIONAL_USER_OWNED_BUCKET
 
 images:
   - 'asia-south1-docker.pkg.dev/$PROJECT_ID/student-repo/student-details:$SHORT_SHA'
