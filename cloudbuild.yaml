@@ -1,5 +1,5 @@
 steps:
-  # 1. Build & Test the Spring Boot Application
+  # 1. Build & Test the Spring Boot Application using Gradle
   - name: 'gradle:7.3.3-jdk17'
     entrypoint: 'gradle'
     args: ['clean', 'build', '--no-daemon']
