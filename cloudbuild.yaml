@@ -1,15 +1,17 @@
 steps:
-  # 1. Clean Gradle Cache Before Build
+  # 1. Set Working Directory & Clean Cache
   - name: 'gcr.io/cloud-builders/gcloud'
     entrypoint: 'bash'
     args:
       - '-c'
-      - 'rm -rf /home/gradle/.gradle/caches && echo "Gradle cache cleared"'
+      - 'mkdir -p /workspace/.gradle && rm -rf /workspace/.gradle/caches && echo "Gradle cache reset in /workspace"'
 
   # 2. Build & Test the Spring Boot Application
   - name: 'gradle:7.3.3-jdk17'
     entrypoint: 'gradle'
     args: ['clean', 'build', '--no-daemon', '--refresh-dependencies']
+    env:
+      - 'GRADLE_USER_HOME=/workspace/.gradle'  # ✅ Force Gradle to use /workspace
 
   # 3. Build Docker Image
   - name: 'gcr.io/cloud-builders/docker'
