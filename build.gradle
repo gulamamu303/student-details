@@ -5,6 +5,10 @@ plugins {
 }
 
 
+
+
+
+
 group = 'com.students.details'
 version = '0.0.1-SNAPSHOT'
 
